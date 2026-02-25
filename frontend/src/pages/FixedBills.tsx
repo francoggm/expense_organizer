@@ -40,7 +40,12 @@ import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
+import { format, addMonths, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useApp, actions } from '../contexts/AppContext';
 import type { Expense, ExpenseFormData } from '../types';
 import {
@@ -81,6 +86,50 @@ export default function FixedBills() {
   const [formData, setFormData] = useState<ExpenseFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof ExpenseFormData, string>>>({});
   const [isSplit, setIsSplit] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+  const handlePreviousMonth = () => {
+    setSelectedMonth(subMonths(selectedMonth, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonth(addMonths(selectedMonth, 1));
+  };
+
+  // Get monthly payment status for recurring fixed expenses
+  const getMonthlyPaymentStatus = (expense: Expense): { isPaid: boolean; splitPayments?: { personId: string; isPaid: boolean }[] } => {
+    if (!expense.isRecurring) {
+      return { 
+        isPaid: expense.status === 'paid',
+        splitPayments: expense.splitBetween.map(s => ({ personId: s.personId, isPaid: s.isPaid }))
+      };
+    }
+
+    const month = selectedMonth.getMonth();
+    const year = selectedMonth.getFullYear();
+    const monthlyPayment = expense.monthlyPayments?.find(
+      (mp) => mp.month === month && mp.year === year
+    );
+
+    if (monthlyPayment) {
+      return {
+        isPaid: monthlyPayment.isPaid,
+        splitPayments: monthlyPayment.splitPayments,
+      };
+    }
+
+    return { 
+      isPaid: false,
+      splitPayments: expense.splitBetween.map(s => ({ personId: s.personId, isPaid: false }))
+    };
+  };
+
+  // Handle marking monthly payment
+  const handleMarkMonthlyPayment = (expenseId: string, isPaid: boolean, personId?: string) => {
+    const month = selectedMonth.getMonth();
+    const year = selectedMonth.getFullYear();
+    dispatch(actions.markMonthlyPayment(expenseId, month, year, isPaid, personId));
+  };
 
   // Filter only fixed expenses
   const fixedExpenses = useMemo(() => {
@@ -245,23 +294,6 @@ export default function FixedBills() {
     setExpenseToDelete(null);
   };
 
-  const handleMarkAsPaid = (expense: Expense) => {
-    const updatedExpense: Expense = {
-      ...expense,
-      status: 'paid',
-      paidAt: new Date().toISOString(),
-      splitBetween: expense.splitBetween.map((s) => ({
-        ...s,
-        isPaid: true,
-        paidAt: new Date().toISOString(),
-      })),
-    };
-    dispatch(actions.updateExpense(updatedExpense));
-  };
-
-  const handleMarkSplitPaid = (expenseId: string, personId: string, isPaid: boolean) => {
-    dispatch(actions.markSplitPaid(expenseId, personId, isPaid));
-  };
 
   const handleSplitChange = (personId: string, percentage: number) => {
     const currentSplits = [...formData.splitBetween];
@@ -349,17 +381,33 @@ export default function FixedBills() {
         <Typography variant="h4" fontWeight="bold">
           Despesas Fixas
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Nova Despesa Fixa
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={handlePreviousMonth} size="small">
+              <ChevronLeftIcon />
+            </IconButton>
+            <Chip
+              icon={<CalendarIcon />}
+              label={format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+              color="primary"
+              sx={{ minWidth: 140, justifyContent: 'center', textTransform: 'capitalize' }}
+            />
+            <IconButton onClick={handleNextMonth} size="small">
+              <ChevronRightIcon />
+            </IconButton>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+          >
+            Nova Despesa Fixa
+          </Button>
+        </Box>
       </Box>
 
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Contas recorrentes mensais como água, luz, internet, aluguel, etc.
+        Contas recorrentes mensais como água, luz, internet, aluguel, etc. Marque os pagamentos para o mês selecionado.
       </Typography>
 
       {fixedExpenses.length === 0 ? (
@@ -421,7 +469,73 @@ export default function FixedBills() {
                       Pago por: {payer?.name || 'Desconhecido'}
                     </Typography>
 
-                    {expense.splitBetween.length > 1 && (
+                    {expense.splitBetween.length > 1 && expense.isRecurring && (
+                      <Box mt={2}>
+                        <Typography variant="body2" color="text.secondary" mb={1}>
+                          Divisão ({format(selectedMonth, 'MMM/yyyy', { locale: ptBR })}):
+                        </Typography>
+                        <List dense disablePadding>
+                          {expense.splitBetween.map((split) => {
+                            const person = getPersonById(split.personId);
+                            const paymentStatus = getMonthlyPaymentStatus(expense);
+                            const personPayment = paymentStatus.splitPayments?.find(sp => sp.personId === split.personId);
+                            const isPersonPaid = personPayment?.isPaid || false;
+                            return (
+                              <ListItem key={split.personId} disablePadding sx={{ py: 0.5 }}>
+                                <ListItemAvatar sx={{ minWidth: 36 }}>
+                                  <Avatar
+                                    sx={{
+                                      width: 24,
+                                      height: 24,
+                                      bgcolor: person?.color,
+                                      fontSize: '0.75rem',
+                                    }}
+                                  >
+                                    {person?.name.charAt(0)}
+                                  </Avatar>
+                                </ListItemAvatar>
+                                <ListItemText
+                                  primary={`${person?.name}: ${formatCurrency(split.amount)}`}
+                                  primaryTypographyProps={{ variant: 'body2' }}
+                                />
+                                <ListItemSecondaryAction>
+                                  <Checkbox
+                                    size="small"
+                                    checked={isPersonPaid}
+                                    onChange={(e) =>
+                                      handleMarkMonthlyPayment(expense.id, e.target.checked, split.personId)
+                                    }
+                                    color="success"
+                                  />
+                                </ListItemSecondaryAction>
+                              </ListItem>
+                            );
+                          })}
+                        </List>
+                      </Box>
+                    )}
+
+                    {expense.splitBetween.length === 1 && expense.isRecurring && (
+                      <Box mt={2}>
+                        {(() => {
+                          const paymentStatus = getMonthlyPaymentStatus(expense);
+                          return (
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={paymentStatus.isPaid}
+                                  onChange={(e) => handleMarkMonthlyPayment(expense.id, e.target.checked)}
+                                  color="success"
+                                />
+                              }
+                              label={paymentStatus.isPaid ? `Pago (${format(selectedMonth, 'MMM/yyyy', { locale: ptBR })})` : `Marcar como Pago (${format(selectedMonth, 'MMM/yyyy', { locale: ptBR })})`}
+                            />
+                          );
+                        })()}
+                      </Box>
+                    )}
+
+                    {!expense.isRecurring && expense.splitBetween.length > 1 && (
                       <Box mt={2}>
                         <Typography variant="body2" color="text.secondary" mb={1}>
                           Divisão:
@@ -452,7 +566,7 @@ export default function FixedBills() {
                                     size="small"
                                     checked={split.isPaid}
                                     onChange={(e) =>
-                                      handleMarkSplitPaid(expense.id, split.personId, e.target.checked)
+                                      dispatch(actions.markSplitPaid(expense.id, split.personId, e.target.checked))
                                     }
                                     color="success"
                                   />
@@ -464,13 +578,13 @@ export default function FixedBills() {
                       </Box>
                     )}
 
-                    {expense.splitBetween.length === 1 && (
+                    {!expense.isRecurring && expense.splitBetween.length === 1 && (
                       <Box mt={2}>
                         <FormControlLabel
                           control={
                             <Checkbox
                               checked={expense.splitBetween[0]?.isPaid || false}
-                              onChange={(e) => handleMarkSplitPaid(expense.id, expense.splitBetween[0].personId, e.target.checked)}
+                              onChange={(e) => dispatch(actions.markSplitPaid(expense.id, expense.splitBetween[0].personId, e.target.checked))}
                               color="success"
                             />
                           }

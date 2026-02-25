@@ -7,9 +7,9 @@ import {
   AccountBalance as AccountBalanceIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useApp } from '../contexts/AppContext';
-import { formatCurrency, calculateTotalByStatus, groupExpensesByCategory, calculateBalances, getDueDateForMonth } from '../utils';
+import { formatCurrency, calculateTotalByStatus, groupExpensesByCategory } from '../utils';
 import { startOfMonth, endOfMonth, format, subMonths, parseISO, isBefore, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -82,7 +82,50 @@ export default function Dashboard() {
     return months;
   }, [state.expenses]);
 
-  const balances = useMemo(() => calculateBalances(state.expenses, state.people), [state.expenses, state.people]);
+  // Calculate expenses per person (including splits)
+  const expensesByPerson = useMemo(() => {
+    const personData: Map<string, { total: number; count: number; splitCount: number }> = new Map();
+    
+    // Initialize for all people
+    state.people.forEach(person => {
+      personData.set(person.id, { total: 0, count: 0, splitCount: 0 });
+    });
+
+    // Count expenses for each person
+    currentMonthExpenses.forEach(expense => {
+      // Count for the payer
+      const payerData = personData.get(expense.paidById);
+      if (payerData) {
+        personData.set(expense.paidById, {
+          ...payerData,
+          count: payerData.count + 1,
+        });
+      }
+
+      // Count split amounts for each person
+      expense.splitBetween.forEach(split => {
+        const data = personData.get(split.personId);
+        if (data) {
+          personData.set(split.personId, {
+            ...data,
+            total: data.total + split.amount,
+            splitCount: data.splitCount + 1,
+          });
+        }
+      });
+    });
+
+    return state.people.map(person => {
+      const data = personData.get(person.id) || { total: 0, count: 0, splitCount: 0 };
+      return {
+        name: person.name,
+        color: person.color,
+        total: data.total,
+        count: data.count,
+        splitCount: data.splitCount,
+      };
+    }).filter(p => p.total > 0 || p.count > 0);
+  }, [currentMonthExpenses, state.people]);
 
   const summaryCards = [
     { title: 'Total do Mês', value: totals.pending + totals.paid + totals.overdue, icon: <AccountBalanceIcon />, color: '#2196F3' },
@@ -155,34 +198,55 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        {balances.length > 0 && (
-          <Grid item xs={12}>
-            <Card>
+        {/* Expenses by Person Chart */}
+        {expensesByPerson.length > 0 && (
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
               <CardContent>
-                <Typography variant="h6" mb={2}>Saldos</Typography>
-                <Grid container spacing={2}>
-                  {balances.map((balance, index) => {
-                    const from = getPersonById(balance.fromPersonId);
-                    const to = getPersonById(balance.toPersonId);
-                    return (
-                      <Grid item xs={12} sm={6} md={4} key={index}>
-                        <Card variant="outlined">
-                          <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: from?.color }}>{from?.name.charAt(0)}</Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Typography variant="body2">{from?.name} deve para {to?.name}</Typography>
-                              <Typography variant="h6" fontWeight={600} color="error.main">{formatCurrency(balance.amount)}</Typography>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
+                <Typography variant="h6" mb={2}>Despesas por Pessoa</Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={expensesByPerson} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tickFormatter={(v) => `R$${v}`} />
+                    <YAxis type="category" dataKey="name" width={80} />
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(value)}
+                      labelFormatter={(label) => `${label}`}
+                    />
+                    <Bar dataKey="total" name="Valor Total" radius={[0, 4, 4, 0]}>
+                      {expensesByPerson.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </Grid>
         )}
+
+        {/* Person Expense Count Chart */}
+        {expensesByPerson.length > 0 && (
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent>
+                <Typography variant="h6" mb={2}>Quantidade de Despesas por Pessoa</Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={expensesByPerson} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="name" width={80} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" name="Despesas Pagas" fill="#2196F3" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="splitCount" name="Participações em Divisões" fill="#4CAF50" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
       </Grid>
     </Box>
   );

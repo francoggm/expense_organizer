@@ -30,6 +30,7 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   SettingsBrightness as SystemModeIcon,
+  CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material';
 import { useTheme } from '../../theme';
 
@@ -43,6 +44,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Resumo Mensal', icon: <CalendarMonthIcon />, path: '/monthly-summary' },
   { text: 'Despesas Fixas', icon: <RepeatIcon />, path: '/fixed-bills' },
   { text: 'Despesas Variáveis', icon: <ShoppingCartIcon />, path: '/variable-expenses' },
   { text: 'Pessoas', icon: <PeopleIcon />, path: '/people' },

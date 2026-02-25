@@ -129,7 +129,27 @@ export default function People() {
   };
 
   const getPersonExpenseCount = (personId: string): number => {
-    return state.expenses.filter((e) => e.paidById === personId).length;
+    // Filter expenses by person
+    const personExpenses = state.expenses.filter((e) => e.paidById === personId);
+    
+    // Group by installmentGroupId to count installment purchases as one expense
+    const uniqueExpenses = new Set<string>();
+    let count = 0;
+    
+    personExpenses.forEach((expense) => {
+      if (expense.installmentGroupId) {
+        // If it's part of an installment group, only count it once
+        if (!uniqueExpenses.has(expense.installmentGroupId)) {
+          uniqueExpenses.add(expense.installmentGroupId);
+          count++;
+        }
+      } else {
+        // If it's not part of an installment group, count it normally
+        count++;
+      }
+    });
+    
+    return count;
   };
 
   return (

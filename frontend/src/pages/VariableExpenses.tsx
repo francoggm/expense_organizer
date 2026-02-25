@@ -52,6 +52,7 @@ import {
   CreditCard as CreditCardIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
 import { useApp, actions } from '../contexts/AppContext';
 import type { Expense, ExpenseFormData } from '../types';
@@ -420,7 +421,21 @@ export default function VariableExpenses() {
         <Typography variant="h4" fontWeight="bold">
           Despesas Variáveis
         </Typography>
-        <Box display="flex" gap={2}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={handlePreviousMonth} size="small">
+              <ChevronLeftIcon />
+            </IconButton>
+            <Chip
+              icon={<CalendarIcon />}
+              label={format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+              color="primary"
+              sx={{ minWidth: 140, justifyContent: 'center', textTransform: 'capitalize' }}
+            />
+            <IconButton onClick={handleNextMonth} size="small">
+              <ChevronRightIcon />
+            </IconButton>
+          </Box>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -444,27 +459,12 @@ export default function VariableExpenses() {
         </Box>
       </Box>
 
-      {/* Month Selector */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ py: 2 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <IconButton onClick={handlePreviousMonth}>
-              <ChevronLeftIcon />
-            </IconButton>
-            <Box textAlign="center">
-              <Typography variant="h6" textTransform="capitalize">
-                {format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total: {formatCurrency(monthTotal)} • {variableExpenses.length} despesas
-              </Typography>
-            </Box>
-            <IconButton onClick={handleNextMonth}>
-              <ChevronRightIcon />
-            </IconButton>
-          </Box>
-        </CardContent>
-      </Card>
+      {/* Month Summary */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body2" color="text.secondary">
+          Total: {formatCurrency(monthTotal)} • {variableExpenses.length} despesas
+        </Typography>
+      </Box>
 
       {variableExpenses.length === 0 ? (
         <EmptyState

@@ -16,6 +16,15 @@ export interface SplitInfo {
   paidAt?: string; // When this person paid their share
 }
 
+// Monthly payment record for recurring fixed expenses
+export interface MonthlyPayment {
+  month: number; // 0-11 (January = 0)
+  year: number;
+  isPaid: boolean;
+  paidAt?: string;
+  splitPayments?: { personId: string; isPaid: boolean; paidAt?: string }[];
+}
+
 // Expense type
 export interface Expense {
   id: string;
@@ -40,6 +49,8 @@ export interface Expense {
   notes?: string;
   createdAt: string;
   paidAt?: string;
+  // For recurring fixed expenses: track payments per month
+  monthlyPayments?: MonthlyPayment[];
 }
 
 // Category type for expense categorization

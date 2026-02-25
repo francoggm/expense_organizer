@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import People from './pages/People';
 import FixedBills from './pages/FixedBills';
 import VariableExpenses from './pages/VariableExpenses';
+import MonthlySummary from './pages/MonthlySummary';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
@@ -21,6 +22,7 @@ function App() {
               <Route path="people" element={<People />} />
               <Route path="fixed-bills" element={<FixedBills />} />
               <Route path="variable-expenses" element={<VariableExpenses />} />
+              <Route path="monthly-summary" element={<MonthlySummary />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
