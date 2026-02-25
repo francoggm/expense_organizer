@@ -121,3 +121,13 @@ export interface PersonFormData {
   email?: string;
   color: string;
 }
+
+// Backup data structure for export/import
+export interface BackupData {
+  people: Person[];
+  expenses: Expense[];
+  categories: Category[];
+  settings: AppSettings;
+  exportedAt: string;
+  version: string;
+}
