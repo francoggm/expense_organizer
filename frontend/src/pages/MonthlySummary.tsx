@@ -428,107 +428,116 @@ export default function MonthlySummary() {
   return (
     <Box>
       {/* Header with month selector */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={600}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: { xs: 2, sm: 0 },
+          mb: { xs: 2, md: 3 }
+        }}
+      >
+        <Typography variant="h4" fontWeight={600} sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
           Resumo Mensal
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={handlePreviousMonth}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+          <IconButton onClick={handlePreviousMonth} size="small">
             <ChevronLeftIcon />
           </IconButton>
           <Chip
             icon={<CalendarIcon />}
-            label={format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+            label={format(selectedMonth, 'MMM yyyy', { locale: ptBR })}
             color="primary"
-            sx={{ minWidth: 160, justifyContent: 'center', textTransform: 'capitalize' }}
+            sx={{ minWidth: { xs: 100, sm: 160 }, justifyContent: 'center', textTransform: 'capitalize' }}
           />
-          <IconButton onClick={handleNextMonth}>
+          <IconButton onClick={handleNextMonth} size="small">
             <ChevronRightIcon />
           </IconButton>
         </Box>
       </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 2, md: 3 } }}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TrendingUpIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <TrendingUpIcon color="primary" sx={{ mr: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                   Total do Mês
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="primary.main">
+              <Typography variant="h4" fontWeight={700} color="primary.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.total)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                 {monthlyExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <RepeatIcon color="info" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Despesas Fixas
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <RepeatIcon color="info" sx={{ mr: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                  Fixas
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="info.main">
+              <Typography variant="h4" fontWeight={700} color="info.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.fixed)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                 {fixedExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ShoppingCartIcon color="secondary" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Despesas Variáveis
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <ShoppingCartIcon color="secondary" sx={{ mr: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                  Variáveis
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="secondary.main">
+              <Typography variant="h4" fontWeight={700} color="secondary.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.variable)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                 {variableExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Pago / Pendente
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <CheckCircleIcon color="success" sx={{ mr: 0.5, fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                  Pago/Pendente
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>
-                <Typography variant="h5" fontWeight={700} color="success.main">
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <Typography variant="h5" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem', md: '1.5rem' } }}>
                   {formatCurrency(totals.paid)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                   /
                 </Typography>
-                <Typography variant="h6" fontWeight={600} color="warning.main">
+                <Typography variant="h6" fontWeight={600} color="warning.main" sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.25rem' } }}>
                   {formatCurrency(totals.pending)}
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                {totals.paidCount} pagas / {totals.pendingCount} pendentes
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                {totals.paidCount}/{totals.pendingCount}
               </Typography>
             </CardContent>
           </Card>
@@ -536,13 +545,19 @@ export default function MonthlySummary() {
       </Grid>
 
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="Todas as Despesas" />
-            <Tab label="Despesas Fixas" />
-            <Tab label="Despesas Variáveis" />
-            <Tab label="Por Categoria" />
+      <Card sx={{ mb: { xs: 2, md: 3 } }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', overflowX: 'auto' }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
+            <Tab label="Todas" sx={{ minWidth: { xs: 'auto', sm: 120 }, px: { xs: 1, sm: 2 } }} />
+            <Tab label="Fixas" sx={{ minWidth: { xs: 'auto', sm: 120 }, px: { xs: 1, sm: 2 } }} />
+            <Tab label="Variáveis" sx={{ minWidth: { xs: 'auto', sm: 120 }, px: { xs: 1, sm: 2 } }} />
+            <Tab label="Categorias" sx={{ minWidth: { xs: 'auto', sm: 120 }, px: { xs: 1, sm: 2 } }} />
           </Tabs>
         </Box>
 

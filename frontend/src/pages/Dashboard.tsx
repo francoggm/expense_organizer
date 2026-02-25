@@ -136,19 +136,27 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={600} mb={3}>Painel</Typography>
+      <Typography variant="h4" fontWeight={600} mb={{ xs: 2, md: 3 }} sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
+        Painel
+      </Typography>
 
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} mb={{ xs: 2, md: 3 }}>
         {summaryCards.map((card) => (
-          <Grid item xs={12} sm={6} md={3} key={card.title}>
+          <Grid item xs={6} sm={6} md={3} key={card.title}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography color="text.secondary" variant="body2">{card.title}</Typography>
-                    <Typography variant="h5" fontWeight={600}>{formatCurrency(card.value)}</Typography>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }} noWrap>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                      {formatCurrency(card.value)}
+                    </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: card.color }}>{card.icon}</Avatar>
+                  <Avatar sx={{ bgcolor: card.color, width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 }, ml: 1 }}>
+                    {card.icon}
+                  </Avatar>
                 </Box>
               </CardContent>
             </Card>
@@ -156,15 +164,26 @@ export default function Dashboard() {
         ))}
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: 400 }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>Despesas por Categoria</Typography>
+          <Card sx={{ height: { xs: 300, sm: 350, md: 400 } }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+              <Typography variant="h6" mb={{ xs: 1, md: 2 }} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                Despesas por Categoria
+              </Typography>
               {categoryData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height="85%">
                   <PieChart>
-                    <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <Pie 
+                      data={categoryData} 
+                      dataKey="value" 
+                      nameKey="name" 
+                      cx="50%" 
+                      cy="50%" 
+                      outerRadius="70%"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={{ strokeWidth: 1 }}
+                    >
                       {categoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -173,7 +192,7 @@ export default function Dashboard() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '85%' }}>
                   <Typography color="text.secondary">Nenhuma despesa este mês</Typography>
                 </Box>
               )}
@@ -182,14 +201,16 @@ export default function Dashboard() {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: 400 }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>Tendência Mensal</Typography>
-              <ResponsiveContainer width="100%" height={300}>
+          <Card sx={{ height: { xs: 300, sm: 350, md: 400 } }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+              <Typography variant="h6" mb={{ xs: 1, md: 2 }} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                Tendência Mensal
+              </Typography>
+              <ResponsiveContainer width="100%" height="85%">
                 <BarChart data={monthlyTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(v) => `R$${v}`} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={(v) => `R$${v}`} tick={{ fontSize: 10 }} width={50} />
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
                   <Bar dataKey="total" fill="#2196F3" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -201,14 +222,16 @@ export default function Dashboard() {
         {/* Expenses by Person Chart */}
         {expensesByPerson.length > 0 && (
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>Despesas por Pessoa</Typography>
-                <ResponsiveContainer width="100%" height={300}>
+            <Card sx={{ height: { xs: 300, sm: 350, md: 400 } }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+                <Typography variant="h6" mb={{ xs: 1, md: 2 }} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                  Despesas por Pessoa
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
                   <BarChart data={expensesByPerson} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(v) => `R$${v}`} />
-                    <YAxis type="category" dataKey="name" width={80} />
+                    <XAxis type="number" tickFormatter={(v) => `R$${v}`} tick={{ fontSize: 10 }} />
+                    <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 11 }} />
                     <Tooltip 
                       formatter={(value: number) => formatCurrency(value)}
                       labelFormatter={(label) => `${label}`}
@@ -228,18 +251,20 @@ export default function Dashboard() {
         {/* Person Expense Count Chart */}
         {expensesByPerson.length > 0 && (
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>Quantidade de Despesas por Pessoa</Typography>
-                <ResponsiveContainer width="100%" height={300}>
+            <Card sx={{ height: { xs: 300, sm: 350, md: 400 } }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+                <Typography variant="h6" mb={{ xs: 1, md: 2 }} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                  Quantidade de Despesas por Pessoa
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
                   <BarChart data={expensesByPerson} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" width={80} />
+                    <XAxis type="number" tick={{ fontSize: 10 }} />
+                    <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar dataKey="count" name="Despesas Pagas" fill="#2196F3" radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="splitCount" name="Participações em Divisões" fill="#4CAF50" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="splitCount" name="Participações" fill="#4CAF50" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

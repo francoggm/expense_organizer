@@ -154,14 +154,25 @@ export default function People() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={600}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: { xs: 2, sm: 0 },
+          mb: { xs: 2, md: 3 }
+        }}
+      >
+        <Typography variant="h4" fontWeight={600} sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
           Pessoas
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
+          fullWidth
+          sx={{ display: { xs: 'flex', sm: 'inline-flex' }, width: { xs: '100%', sm: 'auto' } }}
         >
           Adicionar Pessoa
         </Button>
@@ -170,7 +181,7 @@ export default function People() {
       {state.people.length === 0 ? (
         <Card>
           <EmptyState
-            icon={<PeopleIcon />}
+            icon={<PeopleIcon sx={{ fontSize: { xs: 48, md: 64 } }} />}
             title="Nenhuma pessoa cadastrada"
             description="Adicione pessoas para controlar quem paga as despesas e dividir os custos entre elas."
             actionLabel="Adicionar Pessoa"
@@ -178,9 +189,9 @@ export default function People() {
           />
         </Card>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
           {state.people.map((person) => (
-            <Grid item xs={12} sm={6} md={4} key={person.id}>
+            <Grid item xs={6} sm={6} md={4} key={person.id}>
               <Card
                 sx={{
                   height: '100%',
@@ -252,7 +263,19 @@ export default function People() {
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' },
+          }
+        }}
+      >
         <DialogTitle>
           {editingPerson ? 'Editar Pessoa' : 'Adicionar Nova Pessoa'}
         </DialogTitle>

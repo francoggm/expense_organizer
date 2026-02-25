@@ -377,20 +377,27 @@ export default function FixedBills() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
+      <Box 
+        display="flex" 
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        gap={{ xs: 2, sm: 0 }}
+        mb={{ xs: 2, md: 3 }}
+      >
+        <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
           Despesas Fixas
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <IconButton onClick={handlePreviousMonth} size="small">
               <ChevronLeftIcon />
             </IconButton>
             <Chip
               icon={<CalendarIcon />}
-              label={format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+              label={format(selectedMonth, 'MMM yyyy', { locale: ptBR })}
               color="primary"
-              sx={{ minWidth: 140, justifyContent: 'center', textTransform: 'capitalize' }}
+              sx={{ minWidth: { xs: 100, sm: 140 }, justifyContent: 'center', textTransform: 'capitalize' }}
             />
             <IconButton onClick={handleNextMonth} size="small">
               <ChevronRightIcon />
@@ -400,34 +407,36 @@ export default function FixedBills() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
+            fullWidth
+            sx={{ display: { xs: 'flex', sm: 'inline-flex' }, width: { xs: '100%', sm: 'auto' } }}
           >
-            Nova Despesa Fixa
+            Nova Despesa
           </Button>
         </Box>
       </Box>
 
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography variant="body2" color="text.secondary" mb={{ xs: 2, md: 3 }} sx={{ display: { xs: 'none', sm: 'block' } }}>
         Contas recorrentes mensais como água, luz, internet, aluguel, etc. Marque os pagamentos para o mês selecionado.
       </Typography>
 
       {fixedExpenses.length === 0 ? (
         <EmptyState
-          icon={<ReceiptIcon sx={{ fontSize: 64 }} />}
+          icon={<ReceiptIcon sx={{ fontSize: { xs: 48, md: 64 } }} />}
           title="Nenhuma despesa fixa"
           description="Adicione suas contas fixas mensais para acompanhar os pagamentos."
           actionLabel="Adicionar Despesa Fixa"
           onAction={() => handleOpenDialog()}
         />
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={{ xs: 1.5, sm: 2 }}>
           {fixedExpenses.map((expense) => {
             const status = getExpenseStatus(expense);
             const payer = getPersonById(expense.paidById);
 
             return (
-              <Grid item xs={12} md={6} lg={4} key={expense.id}>
+              <Grid item xs={12} sm={6} lg={4} key={expense.id}>
                 <Card>
-                  <CardContent>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                       <Box display="flex" alignItems="center" gap={1}>
                         {getStatusIcon(status)}
@@ -601,7 +610,19 @@ export default function FixedBills() {
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' },
+          }
+        }}
+      >
         <DialogTitle>
           {editingExpense ? 'Editar Despesa Fixa' : 'Nova Despesa Fixa'}
         </DialogTitle>

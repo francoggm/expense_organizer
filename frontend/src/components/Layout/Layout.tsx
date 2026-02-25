@@ -233,10 +233,12 @@ export default function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 1.5, sm: 2, md: 3 },
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           bgcolor: 'background.default',
           minHeight: '100vh',
+          // Safe area for notched devices
+          pb: { xs: 'calc(env(safe-area-inset-bottom) + 12px)', md: 3 },
         }}
       >
         <Toolbar />

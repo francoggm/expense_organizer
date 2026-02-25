@@ -417,42 +417,52 @@ export default function VariableExpenses() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
+      <Box 
+        display="flex" 
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        gap={{ xs: 2, sm: 0 }}
+        mb={{ xs: 2, md: 3 }}
+      >
+        <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
           Despesas Variáveis
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: { xs: '100%', sm: 'auto' }, justifyContent: 'center' }}>
             <IconButton onClick={handlePreviousMonth} size="small">
               <ChevronLeftIcon />
             </IconButton>
             <Chip
               icon={<CalendarIcon />}
-              label={format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+              label={format(selectedMonth, 'MMM yyyy', { locale: ptBR })}
               color="primary"
-              sx={{ minWidth: 140, justifyContent: 'center', textTransform: 'capitalize' }}
+              sx={{ minWidth: { xs: 100, sm: 140 }, justifyContent: 'center', textTransform: 'capitalize' }}
             />
             <IconButton onClick={handleNextMonth} size="small">
               <ChevronRightIcon />
             </IconButton>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, value) => value && setViewMode(value)}
+              size="small"
+              sx={{ ml: 1 }}
+            >
+              <ToggleButton value="cards">
+                <ViewModuleIcon />
+              </ToggleButton>
+              <ToggleButton value="table">
+                <ViewListIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
           </Box>
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, value) => value && setViewMode(value)}
-            size="small"
-          >
-            <ToggleButton value="cards">
-              <ViewModuleIcon />
-            </ToggleButton>
-            <ToggleButton value="table">
-              <ViewListIcon />
-            </ToggleButton>
-          </ToggleButtonGroup>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
+            fullWidth
+            sx={{ display: { xs: 'flex', sm: 'inline-flex' }, width: { xs: '100%', sm: 'auto' } }}
           >
             Nova Despesa
           </Button>
@@ -475,15 +485,15 @@ export default function VariableExpenses() {
           onAction={() => handleOpenDialog()}
         />
       ) : viewMode === 'cards' ? (
-        <Grid container spacing={2}>
+        <Grid container spacing={{ xs: 1.5, sm: 2 }}>
           {variableExpenses.map((expense) => {
             const status = getExpenseStatus(expense);
             const payer = getPersonById(expense.paidById);
 
             return (
-              <Grid item xs={12} md={6} lg={4} key={expense.id}>
+              <Grid item xs={12} sm={6} lg={4} key={expense.id}>
                 <Card>
-                  <CardContent>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                       <Box display="flex" alignItems="center" gap={1}>
                         {getStatusIcon(status)}
@@ -641,7 +651,19 @@ export default function VariableExpenses() {
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' },
+          }
+        }}
+      >
         <DialogTitle>
           {editingExpense ? 'Editar Despesa' : 'Nova Despesa Variável'}
         </DialogTitle>
