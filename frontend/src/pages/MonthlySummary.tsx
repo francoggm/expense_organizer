@@ -297,16 +297,16 @@ export default function MonthlySummary() {
     }
 
     return (
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
+        <Table size="small" sx={{ width: '100%', tableLayout: 'auto' }}>
           <TableHead>
             <TableRow>
-              <TableCell>Descrição</TableCell>
-              <TableCell>Categoria</TableCell>
-              <TableCell>Responsável</TableCell>
-              <TableCell align="right">Valor</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap' }}>Descrição</TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Categoria</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Responsável</TableCell>
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>Valor</TableCell>
               <TableCell align="center">Status</TableCell>
-              <TableCell>Vencimento</TableCell>
+              <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Vencimento</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -324,20 +324,20 @@ export default function MonthlySummary() {
 
               return (
                 <TableRow key={expense.id}>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TableCell sx={{ py: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       {expense.type === 'fixed' ? (
                         <RepeatIcon fontSize="small" color="primary" />
                       ) : (
                         <ShoppingCartIcon fontSize="small" color="secondary" />
                       )}
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: { xs: 100, sm: 200 } }}>
                           {expense.description}
                         </Typography>
                         {expense.installments > 1 && (
                           <Typography variant="caption" color="text.secondary">
-                            Parcela {expense.currentInstallment}/{expense.installments}
+                            {expense.currentInstallment}/{expense.installments}x
                           </Typography>
                         )}
                         {expense.isRecurring && (
@@ -348,7 +348,7 @@ export default function MonthlySummary() {
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Chip
                       label={categoryInfo.name}
                       size="small"
@@ -359,7 +359,7 @@ export default function MonthlySummary() {
                       }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar
                         sx={{
@@ -376,12 +376,12 @@ export default function MonthlySummary() {
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight={600}>
+                  <TableCell align="right" sx={{ py: { xs: 1, sm: 2 } }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       {formatCurrency(expense.totalAmount)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ py: { xs: 1, sm: 2 } }}>
                     {expense.isRecurring ? (
                       <FormControlLabel
                         control={
@@ -411,7 +411,7 @@ export default function MonthlySummary() {
                       />
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Typography variant="body2" color="text.secondary">
                       {dueInfo}
                     </Typography>
@@ -426,7 +426,7 @@ export default function MonthlySummary() {
   };
 
   return (
-    <Box>
+    <Box sx={{ overflow: 'hidden', maxWidth: '100%' }}>
       {/* Header with month selector */}
       <Box 
         sx={{ 
@@ -458,8 +458,9 @@ export default function MonthlySummary() {
       </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 2, md: 3 } }}>
-        <Grid item xs={6} sm={6} md={3}>
+      <Box sx={{ width: '100%', overflow: 'hidden', mb: { xs: 2, md: 3 } }}>
+        <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -468,17 +469,17 @@ export default function MonthlySummary() {
                   Total do Mês
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="primary.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
+              <Typography variant="h4" fontWeight={700} color="primary.main" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.total)}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                 {monthlyExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -487,17 +488,17 @@ export default function MonthlySummary() {
                   Fixas
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="info.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
+              <Typography variant="h4" fontWeight={700} color="info.main" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.fixed)}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                 {fixedExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -506,17 +507,17 @@ export default function MonthlySummary() {
                   Variáveis
                 </Typography>
               </Box>
-              <Typography variant="h4" fontWeight={700} color="secondary.main" sx={{ fontSize: { xs: '1rem', sm: '1.5rem', md: '2rem' } }}>
+              <Typography variant="h4" fontWeight={700} color="secondary.main" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
                 {formatCurrency(totals.variable)}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                 {variableExpenses.length} despesas
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -526,23 +527,24 @@ export default function MonthlySummary() {
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <Typography variant="h5" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem', md: '1.5rem' } }}>
+                <Typography variant="h5" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
                   {formatCurrency(totals.paid)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                   /
                 </Typography>
-                <Typography variant="h6" fontWeight={600} color="warning.main" sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.25rem' } }}>
+                <Typography variant="h6" fontWeight={600} color="warning.main" sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }}>
                   {formatCurrency(totals.pending)}
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                 {totals.paidCount}/{totals.pendingCount}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+        </Grid>
+      </Box>
 
       {/* Tabs for different views */}
       <Card sx={{ mb: { xs: 2, md: 3 } }}>
@@ -561,7 +563,7 @@ export default function MonthlySummary() {
           </Tabs>
         </Box>
 
-        <CardContent>
+        <CardContent sx={{ p: { xs: 1, sm: 2 }, overflow: 'hidden' }}>
           <TabPanel value={tabValue} index={0}>
             {renderExpenseTable(monthlyExpenses)}
           </TabPanel>
