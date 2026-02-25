@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useApp } from '../contexts/AppContext';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -12,6 +11,8 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const THEME_STORAGE_KEY = 'expense_organizer_theme';
 
 export function useTheme() {
   const context = useContext(ThemeContext);
@@ -26,8 +27,11 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { state, dispatch } = useApp();
-  const [mode, setModeState] = useState<ThemeMode>(state.settings.theme);
+  // Load theme from localStorage
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return (saved as ThemeMode) || 'system';
+  });
   const [systemMode, setSystemMode] = useState<'light' | 'dark'>('light');
 
   // Listen for system theme changes
@@ -43,17 +47,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Sync with app settings
-  useEffect(() => {
-    setModeState(state.settings.theme);
-  }, [state.settings.theme]);
-
   const setMode = (newMode: ThemeMode) => {
     setModeState(newMode);
-    dispatch({
-      type: 'UPDATE_SETTINGS',
-      payload: { ...state.settings, theme: newMode },
-    });
+    localStorage.setItem(THEME_STORAGE_KEY, newMode);
   };
 
   const actualMode = mode === 'system' ? systemMode : mode;
