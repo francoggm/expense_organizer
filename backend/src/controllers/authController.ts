@@ -3,19 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { LoginRequest, ApiResponse, LoginResponse } from '../models/types';
 
-// Hash the access password on startup for comparison
-let hashedPassword: string | null = null;
-
-const initializePassword = async (): Promise<void> => {
-  const accessPassword = process.env.ACCESS_PASSWORD;
-  if (accessPassword) {
-    hashedPassword = await bcrypt.hash(accessPassword, 10);
-  }
-};
-
-// Initialize on module load
-initializePassword();
-
 // Parse expires in string to seconds
 const parseExpiresIn = (expiresIn: string): number => {
   const match = expiresIn.match(/^(\d+)([smhd])$/);
