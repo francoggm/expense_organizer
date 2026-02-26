@@ -8,18 +8,114 @@ Sistema de organização de despesas pessoais/familiares com suporte a divisão 
 expense_organizer/
 ├── frontend/          # Aplicação React (Vite + TypeScript + MUI)
 ├── backend/           # API Node.js (Express + TypeScript + PostgreSQL)
+├── docker-compose.yml # Orquestração dos containers
 └── README.md
 ```
 
-## Requisitos
+## 🐳 Deploy com Docker (Recomendado para VPS)
+
+A forma mais fácil de rodar o projeto em produção é usando Docker.
+
+### Requisitos
+- Docker 20+
+- Docker Compose 2+
+
+### Configuração Rápida
+
+1. **Clone o repositório:**
+```bash
+git clone https://github.com/francoggm/expense_organizer.git
+cd expense_organizer
+```
+
+2. **Configure as variáveis de ambiente:**
+```bash
+cp .env.docker.example .env
+```
+
+3. **Edite o arquivo `.env` com suas configurações:**
+```env
+# Database
+DB_USER=expense_user
+DB_PASSWORD=sua_senha_segura_do_banco
+DB_NAME=expense_organizer
+
+# Authentication (IMPORTANTE: altere em produção!)
+JWT_SECRET=sua_chave_jwt_super_secreta_com_pelo_menos_32_caracteres
+JWT_EXPIRES_IN=7d
+ACCESS_PASSWORD=sua_senha_de_acesso_ao_sistema
+
+# CORS (altere para seu domínio em produção)
+CORS_ORIGIN=http://seu-dominio.com
+```
+
+4. **Inicie os containers:**
+```bash
+docker-compose up -d
+```
+
+5. **Acesse a aplicação:**
+- Frontend: http://localhost (porta 80)
+- Backend API: http://localhost:3001
+- Health check: http://localhost/health
+
+### Comandos Docker Úteis
+
+```bash
+# Ver status dos containers
+docker-compose ps
+
+# Ver logs em tempo real
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f postgres
+
+# Parar todos os containers
+docker-compose down
+
+# Parar e remover volumes (CUIDADO: apaga dados do banco!)
+docker-compose down -v
+
+# Reconstruir containers após alterações
+docker-compose up -d --build
+
+# Reiniciar um serviço específico
+docker-compose restart backend
+```
+
+### Arquitetura Docker
+
+O projeto usa 3 containers:
+
+| Serviço | Imagem | Porta | Descrição |
+|---------|--------|-------|-----------|
+| `postgres` | postgres:16-alpine | 5432 | Banco de dados PostgreSQL |
+| `backend` | Node.js 20 Alpine | 3001 | API Express |
+| `frontend` | Nginx Alpine | 80 | Frontend React (SPA) |
+
+**Características:**
+- ✅ `restart: always` - Containers reiniciam automaticamente
+- ✅ Health checks - Monitoramento de saúde dos serviços
+- ✅ Volume persistente - Dados do PostgreSQL são preservados
+- ✅ Rede interna - Comunicação segura entre containers
+- ✅ Multi-stage builds - Imagens otimizadas para produção
+
+---
+
+## 💻 Desenvolvimento Local (Sem Docker)
+
+### Requisitos
 
 - Node.js 18+
 - PostgreSQL 14+
 - npm ou yarn
 
-## Configuração
+### Configuração
 
-### 1. Banco de Dados
+#### 1. Banco de Dados
 
 1. Crie um banco de dados PostgreSQL:
 ```sql
@@ -31,7 +127,7 @@ CREATE DATABASE expense_organizer;
 psql -d expense_organizer -f backend/database/schema.sql
 ```
 
-### 2. Backend
+#### 2. Backend
 
 1. Entre na pasta do backend:
 ```bash
@@ -64,7 +160,7 @@ DB_PASSWORD=sua_senha
 # Authentication
 JWT_SECRET=sua_chave_secreta_muito_segura_aqui
 JWT_EXPIRES_IN=7d
-APP_PASSWORD=sua_senha_de_acesso
+ACCESS_PASSWORD=sua_senha_de_acesso
 
 # CORS
 CORS_ORIGIN=http://localhost:5173
@@ -80,7 +176,7 @@ npm run build
 npm start
 ```
 
-### 3. Frontend
+#### 3. Frontend
 
 1. Entre na pasta do frontend:
 ```bash
@@ -109,9 +205,11 @@ npm run dev
 
 6. Acesse http://localhost:5173
 
+---
+
 ## Uso
 
-1. Ao acessar a aplicação, você será solicitado a inserir a senha configurada em `APP_PASSWORD`
+1. Ao acessar a aplicação, você será solicitado a inserir a senha configurada em `ACCESS_PASSWORD`
 2. Após autenticação, você terá acesso completo ao sistema
 
 ## Funcionalidades
@@ -169,7 +267,7 @@ npm run dev
 ## Tecnologias
 
 ### Frontend
-- React 18
+- React 19
 - TypeScript
 - Vite
 - Material-UI (MUI)
@@ -177,12 +275,17 @@ npm run dev
 - Recharts (gráficos)
 
 ### Backend
-- Node.js
+- Node.js 20
 - Express
 - TypeScript
-- PostgreSQL
+- PostgreSQL 16
 - JWT (autenticação)
 - bcryptjs (hash de senha)
+
+### Infraestrutura
+- Docker & Docker Compose
+- Nginx (proxy reverso)
+- Multi-stage builds
 
 ## Licença
 
