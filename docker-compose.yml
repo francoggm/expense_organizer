@@ -9,10 +9,35 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env
-    ports:
-      - "3001:3001"
+    # Porta exposta apenas internamente na rede Docker
+    expose:
+      - "3001"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expense_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: expense_organizer_frontend
+    restart: unless-stopped
+    # Porta exposta apenas internamente na rede Docker
+    expose:
+      - "80"
+    # Para expor o frontend externamente no futuro, descomente a linha abaixo:
+    # ports:
+    #   - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
