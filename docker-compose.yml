@@ -9,7 +9,6 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env
-    # Porta exposta apenas internamente na rede Docker
     expose:
       - "3001"
     healthcheck:
@@ -27,12 +26,8 @@ services:
       dockerfile: Dockerfile
     container_name: expense_organizer_frontend
     restart: unless-stopped
-    # Porta exposta apenas internamente na rede Docker
-    expose:
-      - "80"
-    # Para expor o frontend externamente no futuro, descomente a linha abaixo:
-    # ports:
-    #   - "3000:80"
+    ports:
+      - "127.0.0.1:3000:80"
     depends_on:
       backend:
         condition: service_healthy
