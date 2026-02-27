@@ -14,16 +14,11 @@ export const loginRateLimiter = rateLimit({
   standardHeaders: true, // Retorna rate limit info nos headers `RateLimit-*`
   legacyHeaders: false, // Desabilita headers `X-RateLimit-*`
   skipSuccessfulRequests: true, // Não conta requisições bem-sucedidas
-  keyGenerator: (req: Request): string => {
-    // Usa o IP real considerando proxies (nginx)
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-      return forwarded.split(',')[0].trim();
-    }
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  },
+  // Usa o keyGenerator padrão que já lida com IPv6 corretamente
+  // O express já considera X-Forwarded-For quando trust proxy está configurado
   handler: (req: Request, res: Response) => {
-    console.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    const clientIp = req.ip || 'unknown';
+    console.warn(`Rate limit exceeded for IP: ${clientIp}`);
     res.status(429).json({
       success: false,
       error: 'Too many login attempts. Please try again after 15 minutes.',
@@ -42,11 +37,5 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request): string => {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-      return forwarded.split(',')[0].trim();
-    }
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  },
+  // Usa o keyGenerator padrão que já lida com IPv6 corretamente
 });

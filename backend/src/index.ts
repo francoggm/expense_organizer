@@ -10,6 +10,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy - necessário para rate limiting funcionar corretamente atrás do nginx
+// Confia no primeiro proxy (nginx) para obter o IP real do cliente via X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
