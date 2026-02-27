@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { LoginRequest, ApiResponse, LoginResponse } from '../models/types';
+import {
+  recordFailedAttempt,
+  clearFailedAttempts,
+  addSecurityDelay,
+} from '../middleware/bruteForceProtection';
 
 // Parse expires in string to seconds
 const parseExpiresIn = (expiresIn: string): number => {
@@ -25,6 +29,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const { password } = req.body as LoginRequest;
 
     if (!password) {
+      // Adiciona delay mesmo para requisições inválidas
+      await addSecurityDelay();
       res.status(400).json({
         success: false,
         error: 'Password is required',
@@ -49,12 +55,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isValid = password === accessPassword;
 
     if (!isValid) {
+      // Registra tentativa falha para proteção contra brute force
+      recordFailedAttempt(req);
+      
+      // Adiciona delay para desacelerar ataques
+      await addSecurityDelay();
+      
+      // Log da tentativa falha (sem expor a senha)
+      const clientIp = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+      console.warn(`Failed login attempt from IP: ${clientIp}`);
+      
       res.status(401).json({
         success: false,
         error: 'Invalid password',
       } as ApiResponse);
       return;
     }
+
+    // Login bem-sucedido - limpa registro de tentativas falhas
+    clearFailedAttempts(req);
 
     // Generate JWT token
     const expiresInSeconds = parseExpiresIn(jwtExpiresIn);
@@ -63,6 +82,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       jwtSecret,
       { expiresIn: expiresInSeconds }
     );
+
+    const clientIp = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+    console.log(`Successful login from IP: ${clientIp}`);
 
     res.json({
       success: true,
@@ -73,6 +95,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     } as ApiResponse<LoginResponse>);
   } catch (error) {
     console.error('Login error:', error);
+    
+    // Adiciona delay mesmo em erros
+    await addSecurityDelay();
+    
     res.status(500).json({
       success: false,
       error: 'Internal server error',
