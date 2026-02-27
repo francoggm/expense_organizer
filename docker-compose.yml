@@ -27,8 +27,9 @@ services:
     container_name: expense_organizer_frontend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:80"
-      - "10.118.112.1:3000:80"
+      # - "127.0.0.1:3000:80"
+      # - "10.118.112.1:3000:80"
+      - "0.0.0.0:3000:80"
     depends_on:
       backend:
         condition: service_healthy
