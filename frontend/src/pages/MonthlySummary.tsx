@@ -98,11 +98,13 @@ export default function MonthlySummary() {
 
   // Get monthly payment status for recurring fixed expenses
   const getMonthlyPaymentStatus = (expense: Expense): { isPaid: boolean; splitPayments?: { personId: string; isPaid: boolean }[] } => {
+    const splitBetween = expense.splitBetween || [];
+    
     if (!expense.isRecurring) {
       // For non-recurring expenses, use the regular status
       return { 
         isPaid: expense.status === 'paid',
-        splitPayments: expense.splitBetween.map(s => ({ personId: s.personId, isPaid: s.isPaid }))
+        splitPayments: splitBetween.map(s => ({ personId: s.personId, isPaid: s.isPaid }))
       };
     }
 
@@ -122,7 +124,7 @@ export default function MonthlySummary() {
     // No payment record for this month = pending
     return { 
       isPaid: false,
-      splitPayments: expense.splitBetween.map(s => ({ personId: s.personId, isPaid: false }))
+      splitPayments: splitBetween.map(s => ({ personId: s.personId, isPaid: false }))
     };
   };
 
@@ -215,12 +217,13 @@ export default function MonthlySummary() {
     const balanceMap: Map<string, number> = new Map();
 
     // Only consider expenses with splits (more than one person)
-    const splitExpenses = monthlyExpenses.filter(e => e.splitBetween.length > 1);
+    const splitExpenses = monthlyExpenses.filter(e => (e.splitBetween || []).length > 1);
 
     for (const expense of splitExpenses) {
       const paidById = expense.paidById;
+      const splitBetween = expense.splitBetween || [];
       
-      for (const split of expense.splitBetween) {
+      for (const split of splitBetween) {
         // If this person is not the payer and hasn't paid their part
         if (split.personId !== paidById && !split.isPaid) {
           // Use | as separator since UUIDs contain hyphens
