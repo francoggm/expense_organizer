@@ -80,19 +80,22 @@ export default function MonthlySummary() {
 
   // Get person name by ID
   const getPersonName = (personId: string): string => {
-    const person = state.people.find((p) => p.id === personId);
+    const people = state.people || [];
+    const person = people.find((p) => p.id === personId);
     return person?.name || 'Desconhecido';
   };
 
   // Get person color by ID
   const getPersonColor = (personId: string): string => {
-    const person = state.people.find((p) => p.id === personId);
+    const people = state.people || [];
+    const person = people.find((p) => p.id === personId);
     return person?.color || '#9e9e9e';
   };
 
   // Get category info
   const getCategoryInfo = (categoryId: string) => {
-    const category = state.settings.defaultCategories.find((c) => c.id === categoryId);
+    const categories = state.settings?.defaultCategories || [];
+    const category = categories.find((c) => c.id === categoryId);
     return category || { name: categoryId, color: '#9e9e9e' };
   };
 
@@ -145,8 +148,9 @@ export default function MonthlySummary() {
     const monthEnd = endOfMonth(selectedMonth);
     const selectedMonthNum = selectedMonth.getMonth();
     const selectedYear = selectedMonth.getFullYear();
+    const expenses = state.expenses || [];
 
-    return state.expenses.filter((expense) => {
+    return expenses.filter((expense) => {
       // For fixed recurring expenses, check if the dueDay falls within the month
       if (expense.type === 'fixed' && expense.isRecurring && expense.dueDay) {
         // Fixed recurring expenses appear every month
@@ -288,7 +292,7 @@ export default function MonthlySummary() {
         ...data,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [monthlyExpenses, state.settings.defaultCategories]);
+  }, [monthlyExpenses, state.settings?.defaultCategories]);
 
   const renderExpenseTable = (expenses: Expense[]) => {
     if (expenses.length === 0) {
