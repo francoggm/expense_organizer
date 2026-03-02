@@ -53,8 +53,16 @@ export function getDueDateForMonth(dueDay: number, year: number, month: number):
 }
 
 // Check if expense is overdue
-export function isExpenseOverdue(expense: Expense): boolean {
-  if (expense.status === 'paid') return false;
+export function isExpenseOverdue(expense: Expense, month?: number, year?: number): boolean {
+  // For recurring expenses, check monthlyPayments
+  if (expense.isRecurring && expense.monthlyPayments && month !== undefined && year !== undefined) {
+    const monthlyPayment = expense.monthlyPayments.find(
+      (mp) => mp.month === month && mp.year === year
+    );
+    if (monthlyPayment?.isPaid) return false;
+  } else if (expense.status === 'paid') {
+    return false;
+  }
   
   if (expense.dueDate) {
     const dueDate = parseISO(expense.dueDate);
@@ -63,7 +71,9 @@ export function isExpenseOverdue(expense: Expense): boolean {
   
   if (expense.dueDay) {
     const now = new Date();
-    const currentDueDate = getDueDateForMonth(expense.dueDay, now.getFullYear(), now.getMonth());
+    const checkMonth = month !== undefined ? month : now.getMonth();
+    const checkYear = year !== undefined ? year : now.getFullYear();
+    const currentDueDate = getDueDateForMonth(expense.dueDay, checkYear, checkMonth);
     return isBefore(currentDueDate, now);
   }
   
@@ -71,9 +81,18 @@ export function isExpenseOverdue(expense: Expense): boolean {
 }
 
 // Update expense status based on due date
-export function getExpenseStatus(expense: Expense): 'pending' | 'paid' | 'overdue' {
+export function getExpenseStatus(expense: Expense, month?: number, year?: number): 'pending' | 'paid' | 'overdue' {
+  // For recurring expenses, check monthlyPayments for the specific month
+  if (expense.isRecurring && month !== undefined && year !== undefined) {
+    const monthlyPayment = expense.monthlyPayments?.find(
+      (mp) => mp.month === month && mp.year === year
+    );
+    if (monthlyPayment?.isPaid) return 'paid';
+    return isExpenseOverdue(expense, month, year) ? 'overdue' : 'pending';
+  }
+  
   if (expense.status === 'paid') return 'paid';
-  return isExpenseOverdue(expense) ? 'overdue' : 'pending';
+  return isExpenseOverdue(expense, month, year) ? 'overdue' : 'pending';
 }
 
 // Calculate installment amount
@@ -218,11 +237,18 @@ export function calculateTotalExpenses(expenses: Expense[]): number {
 
 // Calculate total by status
 export function calculateTotalByStatus(
-  expenses: Expense[]
+  expenses: Expense[],
+  month?: number,
+  year?: number
 ): { pending: number; paid: number; overdue: number } {
+  // Use current month/year if not provided
+  const now = new Date();
+  const checkMonth = month !== undefined ? month : now.getMonth();
+  const checkYear = year !== undefined ? year : now.getFullYear();
+  
   return expenses.reduce(
     (acc, expense) => {
-      const status = getExpenseStatus(expense);
+      const status = getExpenseStatus(expense, checkMonth, checkYear);
       acc[status] += expense.totalAmount;
       return acc;
     },

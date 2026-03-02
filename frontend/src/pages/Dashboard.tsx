@@ -38,7 +38,10 @@ export default function Dashboard() {
     });
   }, [state.expenses]);
 
-  const totals = useMemo(() => calculateTotalByStatus(currentMonthExpenses), [currentMonthExpenses]);
+  const totals = useMemo(() => {
+    const now = new Date();
+    return calculateTotalByStatus(currentMonthExpenses, now.getMonth(), now.getFullYear());
+  }, [currentMonthExpenses]);
 
   const categoryData = useMemo(() => {
     const groups = groupExpensesByCategory(currentMonthExpenses);
