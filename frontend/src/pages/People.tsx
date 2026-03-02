@@ -14,6 +14,7 @@ import {
   Avatar,
   Chip,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -23,8 +24,7 @@ import {
   People as PeopleIcon,
   Email as EmailIcon,
 } from '@mui/icons-material';
-import { v4 as uuidv4 } from 'uuid';
-import { useApp, actions } from '../contexts/AppContext';
+import { useApp } from '../contexts/AppContext';
 import type { Person, PersonFormData } from '../types';
 import { generateRandomColor, formatCurrency } from '../utils';
 import ColorPicker from '../components/common/ColorPicker';
@@ -38,13 +38,14 @@ const initialFormData: PersonFormData = {
 };
 
 export default function People() {
-  const { state, dispatch } = useApp();
+  const { state, addPerson, updatePerson, deletePerson } = useApp();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
   const [formData, setFormData] = useState<PersonFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<PersonFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenDialog = (person?: Person) => {
     if (person) {
@@ -84,29 +85,30 @@ export default function People() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    if (editingPerson) {
-      const updatedPerson: Person = {
-        ...editingPerson,
-        name: formData.name.trim(),
-        email: formData.email?.trim() || undefined,
-        color: formData.color,
-      };
-      dispatch(actions.updatePerson(updatedPerson));
-    } else {
-      const newPerson: Person = {
-        id: uuidv4(),
-        name: formData.name.trim(),
-        email: formData.email?.trim() || undefined,
-        color: formData.color,
-        createdAt: new Date().toISOString(),
-      };
-      dispatch(actions.addPerson(newPerson));
+    setIsSubmitting(true);
+    try {
+      if (editingPerson) {
+        await updatePerson(editingPerson.id, {
+          name: formData.name.trim(),
+          email: formData.email?.trim() || undefined,
+          color: formData.color,
+        });
+      } else {
+        await addPerson({
+          name: formData.name.trim(),
+          email: formData.email?.trim() || undefined,
+          color: formData.color,
+        });
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving person:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (person: Person) => {
@@ -114,9 +116,16 @@ export default function People() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (personToDelete) {
-      dispatch(actions.deletePerson(personToDelete.id));
+      setIsSubmitting(true);
+      try {
+        await deletePerson(personToDelete.id);
+      } catch (error) {
+        console.error('Error deleting person:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
     setDeleteDialogOpen(false);
     setPersonToDelete(null);
@@ -295,6 +304,7 @@ export default function People() {
                 helperText={errors.name}
                 fullWidth
                 autoFocus
+                disabled={isSubmitting}
               />
             </Box>
             <TextField
@@ -305,15 +315,16 @@ export default function People() {
               error={!!errors.email}
               helperText={errors.email}
               fullWidth
+              disabled={isSubmitting}
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="inherit">
+          <Button onClick={handleCloseDialog} color="inherit" disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingPerson ? 'Salvar' : 'Adicionar'}
+          <Button onClick={handleSubmit} variant="contained" disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={24} /> : editingPerson ? 'Salvar' : 'Adicionar'}
           </Button>
         </DialogActions>
       </Dialog>

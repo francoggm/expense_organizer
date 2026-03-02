@@ -54,7 +54,7 @@ import {
   ChevronRight as ChevronRightIcon,
   CalendarMonth as CalendarIcon,
 } from '@mui/icons-material';
-import { useApp, actions } from '../contexts/AppContext';
+import { useApp } from '../contexts/AppContext';
 import type { Expense, ExpenseFormData } from '../types';
 import {
   formatCurrency,
@@ -86,7 +86,7 @@ const initialFormData: ExpenseFormData = {
 };
 
 export default function VariableExpenses() {
-  const { state, dispatch, getPersonById } = useApp();
+  const { state, getPersonById, addExpense, addExpenses, updateExpense, deleteExpense, deleteExpensesByGroup, markSplitPaid } = useApp();
   const { expenses, people, categories } = state;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -98,6 +98,7 @@ export default function VariableExpenses() {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [isSplit, setIsSplit] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter only variable expenses for the selected month
   const variableExpenses = useMemo(() => {
@@ -217,85 +218,90 @@ export default function VariableExpenses() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validateForm()) return;
+  const handleSubmit = async () => {
+    if (!validateForm() || isSubmitting) return;
 
+    setIsSubmitting(true);
     const splitAmounts = calculateSplitAmounts(formData.totalAmount, formData.splitBetween);
 
-    if (editingExpense) {
-      const updatedExpense: Expense = {
-        ...editingExpense,
-        description: formData.description,
-        category: formData.category,
-        totalAmount: formData.totalAmount,
-        paymentMethod: formData.paymentMethod,
-        installments: formData.paymentMethod === 'credit' ? formData.installments : 1,
-        dueDate: formData.dueDate,
-        paidById: formData.paidById,
-        splitBetween: splitAmounts.map((s, i) => ({
-          ...s,
-          isPaid: editingExpense.splitBetween[i]?.isPaid || false,
-          paidAt: editingExpense.splitBetween[i]?.paidAt,
-        })),
-        notes: formData.notes,
-      };
-      dispatch(actions.updateExpense(updatedExpense));
-    } else {
-      // If credit with installments, create multiple expenses
-      if (formData.paymentMethod === 'credit' && formData.installments > 1) {
-        const groupId = uuidv4();
-        const installmentAmount = formData.totalAmount / formData.installments;
-        const installmentSplits = calculateSplitAmounts(installmentAmount, formData.splitBetween);
-        const startDate = formData.dueDate ? new Date(formData.dueDate) : new Date();
-        
-        const installmentExpenses: Expense[] = [];
-        for (let i = 0; i < formData.installments; i++) {
-          const dueDate = addMonths(startDate, i);
-          installmentExpenses.push({
+    try {
+      if (editingExpense) {
+        const updatedExpense: Expense = {
+          ...editingExpense,
+          description: formData.description,
+          category: formData.category,
+          totalAmount: formData.totalAmount,
+          paymentMethod: formData.paymentMethod,
+          installments: formData.paymentMethod === 'credit' ? formData.installments : 1,
+          dueDate: formData.dueDate,
+          paidById: formData.paidById,
+          splitBetween: splitAmounts.map((s, i) => ({
+            ...s,
+            isPaid: editingExpense.splitBetween[i]?.isPaid || false,
+            paidAt: editingExpense.splitBetween[i]?.paidAt,
+          })),
+          notes: formData.notes,
+        };
+        await updateExpense(editingExpense.id, updatedExpense);
+      } else {
+        // If credit with installments, create multiple expenses
+        if (formData.paymentMethod === 'credit' && formData.installments > 1) {
+          const groupId = uuidv4();
+          const installmentAmount = formData.totalAmount / formData.installments;
+          const installmentSplits = calculateSplitAmounts(installmentAmount, formData.splitBetween);
+          const startDate = formData.dueDate ? new Date(formData.dueDate) : new Date();
+          
+          const installmentExpenses: Expense[] = [];
+          for (let i = 0; i < formData.installments; i++) {
+            const dueDate = addMonths(startDate, i);
+            installmentExpenses.push({
+              id: uuidv4(),
+              description: `${formData.description} (${i + 1}/${formData.installments})`,
+              category: formData.category,
+              type: 'variable',
+              totalAmount: installmentAmount,
+              paymentMethod: 'credit',
+              installments: formData.installments,
+              currentInstallment: i + 1,
+              installmentGroupId: groupId,
+              dueDate: dueDate.toISOString(),
+              paidById: formData.paidById,
+              splitBetween: installmentSplits,
+              status: 'pending',
+              isRecurring: false,
+              isVariableAmount: false,
+              notes: formData.notes,
+              createdAt: new Date().toISOString(),
+            });
+          }
+          await addExpenses(installmentExpenses);
+        } else {
+          const newExpense: Expense = {
             id: uuidv4(),
-            description: `${formData.description} (${i + 1}/${formData.installments})`,
+            description: formData.description,
             category: formData.category,
             type: 'variable',
-            totalAmount: installmentAmount,
-            paymentMethod: 'credit',
-            installments: formData.installments,
-            currentInstallment: i + 1,
-            installmentGroupId: groupId,
-            dueDate: dueDate.toISOString(),
+            totalAmount: formData.totalAmount,
+            paymentMethod: formData.paymentMethod,
+            installments: 1,
+            currentInstallment: 1,
+            dueDate: formData.dueDate,
             paidById: formData.paidById,
-            splitBetween: installmentSplits,
+            splitBetween: splitAmounts,
             status: 'pending',
             isRecurring: false,
             isVariableAmount: false,
             notes: formData.notes,
             createdAt: new Date().toISOString(),
-          });
+          };
+          await addExpense(newExpense);
         }
-        dispatch(actions.addExpenses(installmentExpenses));
-      } else {
-        const newExpense: Expense = {
-          id: uuidv4(),
-          description: formData.description,
-          category: formData.category,
-          type: 'variable',
-          totalAmount: formData.totalAmount,
-          paymentMethod: formData.paymentMethod,
-          installments: 1,
-          currentInstallment: 1,
-          dueDate: formData.dueDate,
-          paidById: formData.paidById,
-          splitBetween: splitAmounts,
-          status: 'pending',
-          isRecurring: false,
-          isVariableAmount: false,
-          notes: formData.notes,
-          createdAt: new Date().toISOString(),
-        };
-        dispatch(actions.addExpense(newExpense));
       }
-    }
 
-    handleCloseDialog();
+      handleCloseDialog();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteClick = (expense: Expense) => {
@@ -303,19 +309,19 @@ export default function VariableExpenses() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (expenseToDelete) {
       if (expenseToDelete.installmentGroupId) {
-        dispatch(actions.deleteExpensesByGroup(expenseToDelete.installmentGroupId));
+        await deleteExpensesByGroup(expenseToDelete.installmentGroupId);
       } else {
-        dispatch(actions.deleteExpense(expenseToDelete.id));
+        await deleteExpense(expenseToDelete.id);
       }
     }
     setDeleteDialogOpen(false);
     setExpenseToDelete(null);
   };
 
-  const handleMarkAsPaid = (expense: Expense) => {
+  const handleMarkAsPaid = async (expense: Expense) => {
     const updatedExpense: Expense = {
       ...expense,
       status: 'paid',
@@ -326,11 +332,11 @@ export default function VariableExpenses() {
         paidAt: new Date().toISOString(),
       })),
     };
-    dispatch(actions.updateExpense(updatedExpense));
+    await updateExpense(expense.id, updatedExpense);
   };
 
-  const handleMarkSplitPaid = (expenseId: string, personId: string, isPaid: boolean) => {
-    dispatch(actions.markSplitPaid(expenseId, personId, isPaid));
+  const handleMarkSplitPaid = async (expenseId: string, personId: string, isPaid: boolean) => {
+    await markSplitPaid(expenseId, personId, isPaid);
   };
 
   const handleSplitChange = (personId: string, percentage: number) => {
@@ -850,9 +856,9 @@ export default function VariableExpenses() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            {editingExpense ? 'Salvar' : 'Adicionar'}
+          <Button onClick={handleCloseDialog} disabled={isSubmitting}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Salvando...' : editingExpense ? 'Salvar' : 'Adicionar'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Button, TextField, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
+import { Box, Typography, Card, CardContent, Button, TextField, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, Chip, CircularProgress } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Download as DownloadIcon, Upload as UploadIcon, LightMode as LightModeIcon, DarkMode as DarkModeIcon, SettingsBrightness as SystemModeIcon } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
-import { useApp, actions } from '../contexts/AppContext';
+import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../theme';
 import type { Category } from '../types';
 import { generateRandomColor, DEFAULT_CATEGORIES } from '../utils';
@@ -11,13 +11,14 @@ import ColorPicker from '../components/common/ColorPicker';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function Settings() {
-  const { state, dispatch } = useApp();
+  const { state, addCategory, updateCategory, deleteCategory, importData, exportData, resetCategories } = useApp();
   const { mode, setMode } = useTheme();
   const [categoryDialog, setCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', color: generateRandomColor(), type: 'variable' as 'fixed' | 'variable' | 'both' });
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpenCategoryDialog = (category?: Category) => {
     if (category) {
@@ -30,20 +31,31 @@ export default function Settings() {
     setCategoryDialog(true);
   };
 
-  const handleSaveCategory = () => {
-    if (!categoryForm.name.trim()) return;
-    if (editingCategory) {
-      dispatch(actions.updateCategory({ ...editingCategory, name: categoryForm.name.trim(), color: categoryForm.color, type: categoryForm.type }));
-    } else {
-      dispatch(actions.addCategory({ 
-        id: uuidv4(), 
-        name: categoryForm.name.trim(), 
-        color: categoryForm.color,
-        icon: 'category',
-        type: categoryForm.type,
-      }));
+  const handleSaveCategory = async () => {
+    if (!categoryForm.name.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, { 
+          name: categoryForm.name.trim(), 
+          color: categoryForm.color, 
+          icon: editingCategory.icon,
+          type: categoryForm.type 
+        });
+      } else {
+        await addCategory({ 
+          name: categoryForm.name.trim(), 
+          color: categoryForm.color,
+          icon: 'category',
+          type: categoryForm.type,
+        });
+      }
+      setCategoryDialog(false);
+    } catch (error) {
+      console.error('Error saving category:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-    setCategoryDialog(false);
   };
 
   const handleDeleteCategory = (category: Category) => {
@@ -51,49 +63,73 @@ export default function Settings() {
     setDeleteDialog(true);
   };
 
-  const confirmDeleteCategory = () => {
-    if (categoryToDelete) dispatch(actions.deleteCategory(categoryToDelete.id));
-    setDeleteDialog(false);
-    setCategoryToDelete(null);
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await deleteCategory(categoryToDelete.id);
+      setDeleteDialog(false);
+      setCategoryToDelete(null);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleExportData = () => {
-    const data = JSON.stringify(state, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `organizador-despesas-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportData = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const data = await exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `organizador-despesas-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Erro ao exportar dados');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || isSubmitting) return;
+    setIsSubmitting(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
         if (data.people && data.expenses && data.categories) {
-          dispatch(actions.importData(data));
+          await importData(data);
           alert('Dados importados com sucesso!');
         } else {
           alert('Formato de arquivo de backup inválido');
         }
       } catch {
         alert('Erro ao ler arquivo de backup');
+      } finally {
+        setIsSubmitting(false);
       }
     };
     reader.readAsText(file);
   };
 
-  const handleResetCategories = () => {
-    DEFAULT_CATEGORIES.forEach((cat: { name: string; color: string; icon: string; type: 'fixed' | 'variable' | 'both' }) => {
-      if (!state.categories.find((c) => c.name === cat.name)) {
-        dispatch(actions.addCategory({ id: uuidv4(), ...cat }));
-      }
-    });
+  const handleResetCategories = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await resetCategories();
+    } catch (error) {
+      console.error('Error resetting categories:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getThemeIcon = (themeMode: string) => {
@@ -162,8 +198,8 @@ export default function Settings() {
             <CardContent>
               <Typography variant="h6" mb={2}>Gerenciamento de Dados</Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleExportData}>Exportar Dados</Button>
-                <Button variant="outlined" startIcon={<UploadIcon />} component="label">
+                <Button variant="outlined" startIcon={isSubmitting ? <CircularProgress size={20} /> : <DownloadIcon />} onClick={handleExportData} disabled={isSubmitting}>Exportar Dados</Button>
+                <Button variant="outlined" startIcon={isSubmitting ? <CircularProgress size={20} /> : <UploadIcon />} component="label" disabled={isSubmitting}>
                   Importar Dados
                   <input type="file" hidden accept=".json" onChange={handleImportData} />
                 </Button>
@@ -178,8 +214,8 @@ export default function Settings() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Categorias</Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button size="small" onClick={handleResetCategories}>Restaurar Padrões</Button>
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenCategoryDialog()}>Adicionar Categoria</Button>
+                  <Button size="small" onClick={handleResetCategories} disabled={isSubmitting}>Restaurar Padrões</Button>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenCategoryDialog()} disabled={isSubmitting}>Adicionar Categoria</Button>
                 </Box>
               </Box>
               <List>
@@ -232,8 +268,10 @@ export default function Settings() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCategoryDialog(false)} color="inherit">Cancelar</Button>
-          <Button onClick={handleSaveCategory} variant="contained">{editingCategory ? 'Salvar' : 'Adicionar'}</Button>
+          <Button onClick={() => setCategoryDialog(false)} color="inherit" disabled={isSubmitting}>Cancelar</Button>
+          <Button onClick={handleSaveCategory} variant="contained" disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={20} /> : (editingCategory ? 'Salvar' : 'Adicionar')}
+          </Button>
         </DialogActions>
       </Dialog>
 

@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useApp, actions } from '../contexts/AppContext';
+import { useApp } from '../contexts/AppContext';
 import { formatCurrency } from '../utils';
 import type { Expense } from '../types';
 import EmptyState from '../components/common/EmptyState';
@@ -62,7 +62,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function MonthlySummary() {
-  const { state, dispatch } = useApp();
+  const { state, markMonthlyPayment } = useApp();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [tabValue, setTabValue] = useState(0);
 
@@ -127,10 +127,14 @@ export default function MonthlySummary() {
   };
 
   // Handle marking monthly payment
-  const handleMarkMonthlyPayment = (expenseId: string, isPaid: boolean, personId?: string) => {
+  const handleMarkMonthlyPayment = async (expenseId: string, isPaid: boolean, personId?: string) => {
     const month = selectedMonth.getMonth();
     const year = selectedMonth.getFullYear();
-    dispatch(actions.markMonthlyPayment(expenseId, month, year, isPaid, personId));
+    try {
+      await markMonthlyPayment(expenseId, month, year, isPaid, personId);
+    } catch (error) {
+      console.error('Error marking monthly payment:', error);
+    }
   };
 
   // Filter expenses for the selected month

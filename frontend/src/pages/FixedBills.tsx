@@ -46,7 +46,7 @@ import {
 } from '@mui/icons-material';
 import { format, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useApp, actions } from '../contexts/AppContext';
+import { useApp } from '../contexts/AppContext';
 import type { Expense, ExpenseFormData } from '../types';
 import {
   formatCurrency,
@@ -76,7 +76,7 @@ const initialFormData: ExpenseFormData = {
 };
 
 export default function FixedBills() {
-  const { state, dispatch, getPersonById } = useApp();
+  const { state, getPersonById, addExpense, updateExpense, deleteExpense, markSplitPaid, markMonthlyPayment } = useApp();
   const { expenses, people, categories } = state;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -87,6 +87,7 @@ export default function FixedBills() {
   const [errors, setErrors] = useState<Partial<Record<keyof ExpenseFormData, string>>>({});
   const [isSplit, setIsSplit] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePreviousMonth = () => {
     setSelectedMonth(subMonths(selectedMonth, 1));
@@ -125,10 +126,10 @@ export default function FixedBills() {
   };
 
   // Handle marking monthly payment
-  const handleMarkMonthlyPayment = (expenseId: string, isPaid: boolean, personId?: string) => {
+  const handleMarkMonthlyPayment = async (expenseId: string, isPaid: boolean, personId?: string) => {
     const month = selectedMonth.getMonth();
     const year = selectedMonth.getFullYear();
-    dispatch(actions.markMonthlyPayment(expenseId, month, year, isPaid, personId));
+    await markMonthlyPayment(expenseId, month, year, isPaid, personId);
   };
 
   // Filter only fixed expenses
@@ -232,53 +233,58 @@ export default function FixedBills() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validateForm()) return;
+  const handleSubmit = async () => {
+    if (!validateForm() || isSubmitting) return;
 
+    setIsSubmitting(true);
     const splitAmounts = calculateSplitAmounts(formData.totalAmount, formData.splitBetween);
 
-    if (editingExpense) {
-      const updatedExpense: Expense = {
-        ...editingExpense,
-        description: formData.description,
-        category: formData.category,
-        totalAmount: formData.totalAmount,
-        paymentMethod: formData.paymentMethod,
-        dueDay: formData.dueDay,
-        paidById: formData.paidById,
-        splitBetween: splitAmounts.map((s, i) => ({
-          ...s,
-          isPaid: editingExpense.splitBetween[i]?.isPaid || false,
-          paidAt: editingExpense.splitBetween[i]?.paidAt,
-        })),
-        isRecurring: formData.isRecurring,
-        isVariableAmount: formData.isVariableAmount,
-        notes: formData.notes,
-      };
-      dispatch(actions.updateExpense(updatedExpense));
-    } else {
-      const newExpense: Expense = {
-        id: uuidv4(),
-        description: formData.description,
-        category: formData.category,
-        type: 'fixed',
-        totalAmount: formData.totalAmount,
-        paymentMethod: formData.paymentMethod,
-        installments: 1,
-        currentInstallment: 1,
-        dueDay: formData.dueDay,
-        paidById: formData.paidById,
-        splitBetween: splitAmounts,
-        status: 'pending',
-        isRecurring: formData.isRecurring,
-        isVariableAmount: formData.isVariableAmount,
-        notes: formData.notes,
-        createdAt: new Date().toISOString(),
-      };
-      dispatch(actions.addExpense(newExpense));
-    }
+    try {
+      if (editingExpense) {
+        const updatedExpense: Expense = {
+          ...editingExpense,
+          description: formData.description,
+          category: formData.category,
+          totalAmount: formData.totalAmount,
+          paymentMethod: formData.paymentMethod,
+          dueDay: formData.dueDay,
+          paidById: formData.paidById,
+          splitBetween: splitAmounts.map((s, i) => ({
+            ...s,
+            isPaid: editingExpense.splitBetween[i]?.isPaid || false,
+            paidAt: editingExpense.splitBetween[i]?.paidAt,
+          })),
+          isRecurring: formData.isRecurring,
+          isVariableAmount: formData.isVariableAmount,
+          notes: formData.notes,
+        };
+        await updateExpense(editingExpense.id, updatedExpense);
+      } else {
+        const newExpense: Expense = {
+          id: uuidv4(),
+          description: formData.description,
+          category: formData.category,
+          type: 'fixed',
+          totalAmount: formData.totalAmount,
+          paymentMethod: formData.paymentMethod,
+          installments: 1,
+          currentInstallment: 1,
+          dueDay: formData.dueDay,
+          paidById: formData.paidById,
+          splitBetween: splitAmounts,
+          status: 'pending',
+          isRecurring: formData.isRecurring,
+          isVariableAmount: formData.isVariableAmount,
+          notes: formData.notes,
+          createdAt: new Date().toISOString(),
+        };
+        await addExpense(newExpense);
+      }
 
-    handleCloseDialog();
+      handleCloseDialog();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteClick = (expense: Expense) => {
@@ -286,12 +292,16 @@ export default function FixedBills() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (expenseToDelete) {
-      dispatch(actions.deleteExpense(expenseToDelete.id));
+      await deleteExpense(expenseToDelete.id);
     }
     setDeleteDialogOpen(false);
     setExpenseToDelete(null);
+  };
+
+  const handleMarkSplitPaidLocal = async (expenseId: string, personId: string, isPaid: boolean) => {
+    await markSplitPaid(expenseId, personId, isPaid);
   };
 
 
@@ -575,7 +585,7 @@ export default function FixedBills() {
                                     size="small"
                                     checked={split.isPaid}
                                     onChange={(e) =>
-                                      dispatch(actions.markSplitPaid(expense.id, split.personId, e.target.checked))
+                                      handleMarkSplitPaidLocal(expense.id, split.personId, e.target.checked)
                                     }
                                     color="success"
                                   />
@@ -593,7 +603,7 @@ export default function FixedBills() {
                           control={
                             <Checkbox
                               checked={expense.splitBetween[0]?.isPaid || false}
-                              onChange={(e) => dispatch(actions.markSplitPaid(expense.id, expense.splitBetween[0].personId, e.target.checked))}
+                              onChange={(e) => handleMarkSplitPaidLocal(expense.id, expense.splitBetween[0].personId, e.target.checked)}
                               color="success"
                             />
                           }
@@ -799,9 +809,9 @@ export default function FixedBills() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingExpense ? 'Salvar' : 'Adicionar'}
+          <Button onClick={handleCloseDialog} disabled={isSubmitting}>Cancelar</Button>
+          <Button onClick={handleSubmit} variant="contained" disabled={isSubmitting}>
+            {isSubmitting ? 'Salvando...' : editingExpense ? 'Salvar' : 'Adicionar'}
           </Button>
         </DialogActions>
       </Dialog>
