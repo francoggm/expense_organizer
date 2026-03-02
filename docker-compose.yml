@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: expense_organizer_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: expense_organizer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d expense_organizer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - expense_network
+
   backend:
     build:
       context: ./backend
@@ -9,8 +28,9 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
     expose:
       - "3001"
     healthcheck:
@@ -46,3 +66,6 @@ services:
 networks:
   expense_network:
     driver: bridge
+
+volumes:
+  postgres_data:
